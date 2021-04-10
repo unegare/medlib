@@ -109,12 +109,12 @@ public class VisitDB {
             }
         }
 
-        public Cursor getAllUsedProfilesIDs(SQLiteDatabase db) {
+        public Cursor getAllUsedProfileIDs(SQLiteDatabase db) {
             Cursor cur = db.rawQuery("SELECT DISTINCT " + COLUMN_PROFILE_ID + " FROM " + TABLE_NAME_VISITS + ";", null);
             return cur;
         }
 
-        public Cursor getAllUsedProfilesNames(SQLiteDatabase db) {
+        public Cursor getAllUsedProfileNames(SQLiteDatabase db) {
             Cursor cur = db.rawQuery("SELECT * FROM " + TABLE_NAME_PROFILES + " PR "
                     + " WHERE EXISTS (SELECT 1 FROM " + TABLE_NAME_VISITS + " VS "
                     + " WHERE VS." + COLUMN_PROFILE_ID + " = PR." + COLUMN_PROFILE_ID + ");", null);
@@ -150,12 +150,12 @@ public class VisitDB {
         dbHelper.addRecord(db, docname, profile_id);
     }
 
-    public Cursor getAllUsedProfilesIDs() {
-        return dbHelper.getAllUsedProfilesIDs(db);
+    public Cursor getAllUsedProfileIDs() {
+        return dbHelper.getAllUsedProfileIDs(db);
     }
 
-    public Cursor getAllUsedProfilesNames() {
-        return dbHelper.getAllUsedProfilesNames(db);
+    public Cursor getAllUsedProfileNames() {
+        return dbHelper.getAllUsedProfileNames(db);
     }
 
     public void close() throws SQLException {

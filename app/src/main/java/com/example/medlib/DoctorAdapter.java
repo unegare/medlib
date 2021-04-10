@@ -62,4 +62,8 @@ public class DoctorAdapter extends
         Log.i("DOCAD::getItemCount", Integer.toString(mDoctors.size()));
         return mDoctors.size();
     }
+
+    public void setDoctors(List<DoctorItem> docs) {
+        mDoctors = docs;
+    }
 }

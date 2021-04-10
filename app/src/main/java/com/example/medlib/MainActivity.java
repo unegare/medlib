@@ -31,6 +31,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
     ArrayList<DoctorItem> doctors;
     VisitDB vdb;
+    DoctorAdapter docAd;
     Button btn;
     Button btn2;
 
@@ -41,10 +42,6 @@ public class MainActivity extends AppCompatActivity {
     };
     final static MyIntentResults[] MIR_VALUES = MyIntentResults.values();
 
-//    public static final int SELECT_DOC = 1;
-//    public static final int OPEN_DOC = 2;
-//    public static final int OPEN_CONTENT_URL = 3;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,22 +50,6 @@ public class MainActivity extends AppCompatActivity {
         btn = (Button) findViewById(R.id.button);
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-//                    f = File.createTempFile("temp", "txt");
-//                    f.deleteOnExit();
-//                    FileOutputStream fout = new FileOutputStream(f, false);
-//                    OutputStreamWriter osw = new OutputStreamWriter(fout);
-//                    osw.append("Hello there!");
-//                    osw.close();
-//                    fout.flush();
-//                    fout.close();
-//                } catch (java.io.IOException ex) {
-//                    Log.i("BUTTON LISTENER", "ex is caught: " + ex.getMessage());
-//                    return;
-//                }
-//                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-//
-//                intent.setDataAndType(Uri.fromFile(f), "application/pdf");
-//                startActivity(intent);
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("application/pdf");
@@ -88,12 +69,10 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView rvDoctors = (RecyclerView) findViewById(R.id.listOfDoctors);
         if (doctors == null) {
-//            DoctorItem.lastDoctorId = 0;
-//            doctors = DoctorItem.createDoctorList(5);
             doctors = new ArrayList<DoctorItem>(Arrays.asList(new DoctorItem("Empty list", -1)));
         }
 
-        DoctorAdapter docAd = new DoctorAdapter(doctors);
+        docAd = new DoctorAdapter(doctors);
         rvDoctors.setAdapter(docAd);
         rvDoctors.setLayoutManager(new LinearLayoutManager(this));
     }
@@ -118,22 +97,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Random rnd = new Random();
-                Cursor cur = vdb.getAllUsedProfilesNames();
+                Cursor cur = vdb.getAllUsedProfileNames();
+                ArrayList<DoctorItem> docs = new ArrayList<DoctorItem>();
+                if (cur.moveToFirst()) {
+                    do {
+                        docs.add(new DoctorItem(
+                                cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)),
+                                cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID))));
+                    } while (cur.moveToNext());
+                } else {
+                    docs.add(new DoctorItem("Empty list", -1));
+                }
+                int numOfProfiles = cur.getCount();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        showToast(Integer.toString(cur.getCount()));
-                        if (cur.moveToFirst()) {
-                            doctors.clear();
-                            do {
-                                doctors.add(new DoctorItem(
-                                        cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)),
-                                        cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID))));
-//                                rvDoctors.getAdapter().notifyItemInserted(doctors.size() - 1);
-                            } while (cur.moveToNext());
-                            RecyclerView rvDoctors = (RecyclerView) findViewById(R.id.listOfDoctors);
-                            rvDoctors.getAdapter().notifyDataSetChanged();
-                        }
+                        showToast("numOfProfiles: " + Integer.toString(numOfProfiles));
+                        docAd.setDoctors(docs);
+                        docAd.notifyDataSetChanged();
                     }
                 });
             }
@@ -142,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void showToast(String s) {
-        Toast toast = Toast.makeText(getApplicationContext(), Integer.toString(vdb.getNumOfRecords()), Toast.LENGTH_LONG);
+        Toast toast = Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG);
         toast.show();
     }
 
