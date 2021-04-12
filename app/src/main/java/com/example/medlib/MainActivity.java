@@ -30,10 +30,13 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     ArrayList<DoctorItem> doctors;
+    ArrayList<DoctorItem> docDates;
     VisitDB vdb;
     DoctorAdapter docAd;
     Button btn;
     Button btn2;
+
+    int menuLvl;
 
     enum MyIntentResults {
         SELECT_DOC,
@@ -69,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView rvDoctors = (RecyclerView) findViewById(R.id.listOfDoctors);
         if (doctors == null) {
-            doctors = new ArrayList<DoctorItem>(Arrays.asList(new DoctorItem("Empty list", -1)));
+            doctors = new ArrayList<DoctorItem>(Arrays.asList(new DoctorItem("Empty list", -1, j -> {Log.i("MainActivity", "Empty list of doctors: onClick (from onCreate)");})));
         }
 
         docAd = new DoctorAdapter(doctors);
@@ -93,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
         vdb = new VisitDB(getApplicationContext());
         vdb.open();
 
+        menuLvl = 0;
+
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -103,11 +108,14 @@ public class MainActivity extends AppCompatActivity {
                     do {
                         docs.add(new DoctorItem(
                                 cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)),
-                                cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID))));
+                                cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID)),
+                                j -> { onProfileChosen(j); })
+                                );
                     } while (cur.moveToNext());
                 } else {
-                    docs.add(new DoctorItem("Empty list", -1));
+                    docs.add(new DoctorItem("Empty list", -1, j -> {Log.i("MainActivity", "Empty list of doctors: onClick");}));
                 }
+                doctors = docs;
                 int numOfProfiles = cur.getCount();
                 runOnUiThread(new Runnable() {
                     @Override
@@ -170,9 +178,38 @@ public class MainActivity extends AppCompatActivity {
     public void onBackPressed() {
         Toast t = Toast.makeText(getApplicationContext(), "this is a message from onBackPressed", Toast.LENGTH_SHORT);
         t.show();
+        if (menuLvl > 0) {
+            Log.i("onBackPressed", "doctors.size() = " + doctors.size());
+            docAd.setDoctors(doctors);
+            docAd.notifyDataSetChanged();
+            menuLvl--;
+        }
     }
 
     public void renderProfileList(Cursor cur) {
 
+    }
+
+    public void onProfileChosen(int profile_id) {
+        Log.i("onProfileChosen", "doctors.size() = " + doctors.size());
+        Cursor cur = vdb.getAllRecordsByProfileID(profile_id);
+        if (docDates == null) {
+            docDates = new ArrayList<DoctorItem>();
+        } else {
+            docDates.clear();
+        }
+        if (cur.moveToFirst()) {
+            do {
+                docDates.add(new DoctorItem(
+                        cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_DOCNAME)),
+                        cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID)),
+                        j -> {Log.i("DoctorList", "date #" + j + " clicked");}));
+            } while(cur.moveToNext());
+        } else {
+            docDates.add(new DoctorItem("Empty list", -1, j -> {Log.i("DoctorList", "Empty");}));
+        }
+        menuLvl++;
+        docAd.setDoctors(docDates);
+        docAd.notifyDataSetChanged();
     }
 }

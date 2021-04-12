@@ -120,6 +120,11 @@ public class VisitDB {
                     + " WHERE VS." + COLUMN_PROFILE_ID + " = PR." + COLUMN_PROFILE_ID + ");", null);
             return cur;
         }
+
+        public Cursor getAllRecordsByProfileID(SQLiteDatabase db, int profile_id) {
+            Cursor cur = db.rawQuery("SELECT * FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_PROFILE_ID + " = " + profile_id, null);
+            return cur;
+        }
     }
 
     public VisitDB(Context ctx) {
@@ -156,6 +161,10 @@ public class VisitDB {
 
     public Cursor getAllUsedProfileNames() {
         return dbHelper.getAllUsedProfileNames(db);
+    }
+
+    public Cursor getAllRecordsByProfileID(int profile_id) {
+        return dbHelper.getAllRecordsByProfileID(db, profile_id);
     }
 
     public void close() throws SQLException {

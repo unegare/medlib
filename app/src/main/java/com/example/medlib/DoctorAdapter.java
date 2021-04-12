@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.function.IntConsumer;
 
 public class DoctorAdapter extends
     RecyclerView.Adapter<DoctorAdapter.ViewHolder> {
@@ -19,12 +20,14 @@ public class DoctorAdapter extends
     public class ViewHolder extends RecyclerView.ViewHolder {
         public TextView nameTextView;
         public TextView infoTextView;
+        public View view;
 
         public ViewHolder(View itemView) {
             super(itemView);
 
             nameTextView = (TextView) itemView.findViewById(R.id.doctor_name);
             infoTextView = (TextView) itemView.findViewById(R.id.doctor_lastInfo);
+            view = itemView;
         }
     }
 
@@ -50,11 +53,19 @@ public class DoctorAdapter extends
         Log.i("DOCAD::onBindViewHolder", "position=" + Integer.toString(position));
         DoctorItem doc = mDoctors.get(position);
 
-        TextView tvName = holder.nameTextView;
-        tvName.setText(doc.getProfileName());
+        holder.nameTextView.setText(doc.getProfileName());
 
-        TextView tvInfo = holder.infoTextView;
-        tvInfo.setText("none");
+        holder.infoTextView.setText("none");
+
+        int profile_id = doc.getProfileID();
+        IntConsumer ic = doc.getOnClickHandler();
+        holder.view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i("DoctorItem", "onClick");
+                ic.accept(profile_id);
+            }
+        });
     }
 
     @Override
