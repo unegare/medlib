@@ -18,7 +18,7 @@ public class VisitDB {
 
     public class VisitDBHelper extends SQLiteOpenHelper {
         public static final String DB_NAME = "visits.db";
-        public static final int DB_VERSION = 2;
+        public static final int DB_VERSION = 4;
         public static final String TABLE_NAME_VISITS = "visits";
 
         public static final String COLUMN_ID = "_id";
@@ -82,11 +82,13 @@ public class VisitDB {
             onCreate(db);
         }
 
-        public void addRecord(SQLiteDatabase db, String docname, int profile_id) {
+        public void addRecord(SQLiteDatabase db, String docname, int profile_id, byte[] bytearr, String datatype) {
             Log.i(VisitDBHelper.class.getName(), "addRecord: { docname: \"" + docname + "\", profile: " + profile_id + " }");
             ContentValues cv = new ContentValues();
             cv.put(COLUMN_DOCNAME, docname);
             cv.put(COLUMN_PROFILE_ID, profile_id);
+            cv.put(COLUMN_DATA_BLOB, bytearr);
+            cv.put(COLUMN_ATTACHED_DATA_TYPE, datatype);
             long res = db.insert(TABLE_NAME_VISITS, null, cv);
             Log.i(VisitDB.class.getName(), "res = " + res);
         }
@@ -105,7 +107,9 @@ public class VisitDB {
             }
             Random rnd = new Random();
             for (int i = 0; i < numOfVisits; i++) {
-                addRecord(db, "Docname #" + i, rnd.nextInt(numOfProfiles) + 1);
+                byte[] bytearr = (i%2 == 1) ? PregeneratedFiles.pdffile_001 : ("Generated file txt #" + i).getBytes();
+                String datatype = (i%2 == 1) ? "application/pdf" : "text/plain";
+                addRecord(db, "Docname #" + i, rnd.nextInt(numOfProfiles) + 1, bytearr, datatype);
             }
         }
 
@@ -124,6 +128,37 @@ public class VisitDB {
         public Cursor getAllRecordsByProfileID(SQLiteDatabase db, int profile_id) {
             Cursor cur = db.rawQuery("SELECT * FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_PROFILE_ID + " = " + profile_id, null);
             return cur;
+        }
+
+        public Cursor getAllDocnamesAndDatesByProfileID(SQLiteDatabase db, int profile_id){
+            Cursor cur = db.rawQuery("SELECT " + COLUMN_ID + ", " + COLUMN_DOCNAME + ", " + COLUMN_DATE + " FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_PROFILE_ID + " = " + profile_id, null);
+            return cur;
+        }
+
+        public Cursor getRecordByid(int id) {
+            return db.rawQuery("SELECT * FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_ID + " = " + id, null);
+        }
+
+        public String getDataTypeByID(SQLiteDatabase db, int id) {
+            Cursor cur = db.rawQuery("SELECT " + COLUMN_ATTACHED_DATA_TYPE + " FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_ID + " = " + id, null);
+            String datatype;
+            if (cur.moveToFirst()) {
+                datatype = cur.getString(cur.getColumnIndex(COLUMN_ATTACHED_DATA_TYPE));
+            } else {
+                datatype = "text/plain";
+            }
+            return datatype;
+        }
+
+        public byte[] getDataByID(SQLiteDatabase db, int id) {
+            Cursor cur = db.rawQuery("SELECT " + COLUMN_DATA_BLOB + " FROM " + TABLE_NAME_VISITS + " WHERE " + COLUMN_ID + " = " + id, null);
+            byte[] bytearr;
+            if (cur.moveToFirst()) {
+                bytearr = cur.getBlob(cur.getColumnIndex(COLUMN_DATA_BLOB));
+            } else {
+                bytearr = "There is no such a file".getBytes();
+            }
+            return bytearr;
         }
     }
 
@@ -151,8 +186,8 @@ public class VisitDB {
         return cur;
     }
 
-    public void addRecord(String docname, int profile_id) {
-        dbHelper.addRecord(db, docname, profile_id);
+    public void addRecord(String docname, int profile_id, byte[] bytearr, String datatype) {
+        dbHelper.addRecord(db, docname, profile_id, bytearr, datatype);
     }
 
     public Cursor getAllUsedProfileIDs() {
@@ -167,6 +202,21 @@ public class VisitDB {
         return dbHelper.getAllRecordsByProfileID(db, profile_id);
     }
 
+    public Cursor getRecordByID(int id) {
+        return dbHelper.getRecordByid(id);
+    }
+
+    public String getDataTypeByID(int id) {
+        return dbHelper.getDataTypeByID(db, id);
+    }
+
+    public byte[] getDataByID(int id) {
+        return dbHelper.getDataByID(db, id);
+    }
+
+    public Cursor getAllDocnamesAndDatesByProfileID(int id) {
+        return dbHelper.getAllDocnamesAndDatesByProfileID(db, id);
+    }
     public void close() throws SQLException {
         db.close();
     }

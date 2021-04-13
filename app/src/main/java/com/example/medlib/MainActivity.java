@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         btn2.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.parse("content://com.example.medlib.MyContentProvider/something"), "text/plain");
+                intent.setDataAndType(Uri.parse("content://com.example.medlib.MyContentProvider/something"), "application/pdf");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
             }
@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onProfileChosen(int profile_id) {
         Log.i("onProfileChosen", "doctors.size() = " + doctors.size());
-        Cursor cur = vdb.getAllRecordsByProfileID(profile_id);
+        Cursor cur = vdb.getAllDocnamesAndDatesByProfileID(profile_id);
         if (docDates == null) {
             docDates = new ArrayList<DoctorItem>();
         } else {
@@ -202,8 +202,8 @@ public class MainActivity extends AppCompatActivity {
             do {
                 docDates.add(new DoctorItem(
                         cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_DOCNAME)),
-                        cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID)),
-                        j -> {Log.i("DoctorList", "date #" + j + " clicked");}));
+                        cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_ID)),
+                        j -> {Log.i("DoctorList", "date #" + j + " clicked"); onDateChosen(j);}));
             } while(cur.moveToNext());
         } else {
             docDates.add(new DoctorItem("Empty list", -1, j -> {Log.i("DoctorList", "Empty");}));
@@ -211,5 +211,15 @@ public class MainActivity extends AppCompatActivity {
         menuLvl++;
         docAd.setDoctors(docDates);
         docAd.notifyDataSetChanged();
+    }
+
+    public void onDateChosen(int id) {
+        Log.i("onDateChosen", "" + id);
+        String datatype = vdb.getDataTypeByID(id);
+        Log.i("onDateChosen", datatype);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(Uri.parse("content://com.example.medlib.MyContentProvider/" + id),  datatype);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
     }
 }

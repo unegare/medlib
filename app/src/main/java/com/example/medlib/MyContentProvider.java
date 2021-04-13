@@ -2,6 +2,7 @@ package com.example.medlib;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,6 +21,7 @@ public class MyContentProvider extends ContentProvider {
     public boolean onCreate() {
         Log.i(MyContentProvider.class.getName(), "onCreate");
         vdb = new VisitDB(getContext());
+        vdb.open();
         return true;
     }
 
@@ -60,7 +62,14 @@ public class MyContentProvider extends ContentProvider {
 
     public String getType(Uri uri) {
         Log.i(MyContentProvider.class.getName(), "getType(" + uri.toString() + ")");
-        return "text/plain";
+        Cursor cur = vdb.getRecordByID(Integer.parseInt(uri.getLastPathSegment()));
+        String datatype;
+        if (cur.moveToFirst()) {
+            datatype = cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_ATTACHED_DATA_TYPE));
+        } else {
+            datatype = "text/plain";
+        }
+        return datatype;
     }
 
     public ParcelFileDescriptor openFile(Uri uri, String mode, CancellationSignal signal) {
@@ -71,9 +80,11 @@ public class MyContentProvider extends ContentProvider {
     public ParcelFileDescriptor openFile(Uri uri, String mode) {
         Log.i(MyContentProvider.class.getName(), "openFile(" + uri.toString() + ") 2");
         try {
+            byte[] bytearr = vdb.getDataByID(Integer.parseInt(uri.getLastPathSegment()));
             ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
             ParcelFileDescriptor.AutoCloseOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]);
-            outputStream.write("Hello there!".getBytes());
+//            outputStream.write("Hello there!".getBytes());
+            outputStream.write(bytearr);
             outputStream.flush();
             outputStream.close();
             return pipe[0];
