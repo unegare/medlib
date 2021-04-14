@@ -16,6 +16,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".PdfViewer">
+        </activity>
         <provider android:name="MyContentProvider"
             android:authorities="com.example.medlib.MyContentProvider"
             android:exported="true"></provider>

@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     DoctorAdapter docAd;
     Button btn;
     Button btn2;
+    String s_uri_to_open;
+    String s_uri_datatype;
 
     int menuLvl;
 
@@ -91,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        getWindow().getDecorView().getRootView().setBackgroundColor(Color.argb(255,0,0,0));
+//        getWindow().getDecorView().getRootView().setBackgroundColor(Color.argb(255,0,0,0));
 
         vdb = new VisitDB(getApplicationContext());
         vdb.open();
@@ -144,7 +146,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        showToast("onActivityResult: resultCode = " + resultCode + " | RESULT_OK == " + Activity.RESULT_OK + " | " + MIR_VALUES[requestCode] + " | (data == null) == " + (data == null));
         if (resultCode != Activity.RESULT_OK) {
+            if  (MIR_VALUES[requestCode] == MyIntentResults.OPEN_CONTENT_URL) {
+                if (s_uri_datatype.equals("application/pdf")) {
+                    Intent intent = new Intent(MainActivity.this, PdfViewer.class);
+                    intent.putExtra("uri", s_uri_to_open);
+                    startActivity(intent);
+                }
+            }
 //            Log.i(Thread.currentThread().getStackTrace()[1].getMethodName(), "resultCode = " + resultCode);
             Log.i("onActivityResult", "resultCode = " + resultCode);
             return;
@@ -215,11 +225,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void onDateChosen(int id) {
         Log.i("onDateChosen", "" + id);
-        String datatype = vdb.getDataTypeByID(id);
-        Log.i("onDateChosen", datatype);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(Uri.parse("content://com.example.medlib.MyContentProvider/" + id),  datatype);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
+        s_uri_datatype = vdb.getDataTypeByID(id);
+        s_uri_to_open = "content://com.example.medlib.MyContentProvider/" + id;
+        Log.i("onDateChosen", s_uri_datatype);
+//        if (datatype.equals("application/pdf")) {
+//            Intent intent = new Intent(MainActivity.this, PdfViewer.class);
+//            intent.putExtra("uri", uri);
+//            startActivity(intent);
+//        } else {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(Uri.parse(s_uri_to_open), s_uri_datatype);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
+//        }
     }
 }
