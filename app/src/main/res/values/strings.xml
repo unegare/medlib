@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">MedLib</string>
+    <string name="gen_new_db_btn_lbl">gen new db</string>
+    <string name="add_new_record_btn_lbl">add record</string>
+    <string name="add_new_profile_btn_lbl">add profile</string>
+    <string name="ad_enter_profile_name">Add profile name</string>
+    <string name="ad_enter_profile_name_message">Enter new one</string>>
 </resources>

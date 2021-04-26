@@ -57,13 +57,23 @@ public class DoctorAdapter extends
 
         holder.infoTextView.setText("none");
 
-        int profile_id = doc.getProfileID();
+        int profile_id = doc.getID();
         IntConsumer ic = doc.getOnClickHandler();
+        IntConsumer ilc = doc.getOnLongClickHandler();
         holder.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.i("DoctorItem", "onClick");
                 ic.accept(profile_id);
+            }
+        });
+
+        holder.view.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                Log.i("DoctorItem", "onLongClick");
+                ilc.accept(profile_id);
+                return true;
             }
         });
     }

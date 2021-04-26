@@ -5,28 +5,36 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Activity;
-import android.content.Context;
+import androidx.appcompat.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Color;
+import android.graphics.drawable.shapes.Shape;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.lang.reflect.Array;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 public class MainActivity extends AppCompatActivity {
     ArrayList<DoctorItem> doctors;
@@ -37,6 +45,12 @@ public class MainActivity extends AppCompatActivity {
     Button btn2;
     String s_uri_to_open;
     String s_uri_datatype;
+    ExtendedFloatingActionButton add_fbtn;
+    ExtendedFloatingActionButton gen_new_db_btn;
+    ExtendedFloatingActionButton add_new_record_btn;
+    ExtendedFloatingActionButton add_new_profile_btn;
+    List<ExtendedFloatingActionButton> btn_list;
+    boolean FABsShown;
 
     int menuLvl;
 
@@ -44,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         SELECT_DOC,
         OPEN_DOC,
         OPEN_CONTENT_URL,
+        ADD_NEW_RECORD,
     };
     final static MyIntentResults[] MIR_VALUES = MyIntentResults.values();
 
@@ -61,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, MyIntentResults.SELECT_DOC.ordinal());
             }
         });
+        btn.setVisibility(View.INVISIBLE);
 
         btn2 = (Button) findViewById(R.id.button2);
         btn2.setOnClickListener(new View.OnClickListener() {
@@ -71,10 +87,101 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
             }
         });
+        btn2.setVisibility(View.INVISIBLE);
+
+        add_fbtn = findViewById(R.id.add_fbtn);
+        add_fbtn.shrink();
+        add_fbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (FABsShown) hideFABs();
+                else showFABs();
+            }
+        });
+
+        add_new_record_btn = findViewById(R.id.add_new_record_btn);
+        add_new_record_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideFABs();
+                Intent intent = new Intent(MainActivity.this, RecordSpecificator.class);
+                final Cursor allProfiles = vdb.getAllProfiles();
+                if (allProfiles.moveToFirst()) {
+                    do {
+                        intent.putExtra(
+                                Integer.toString(allProfiles.getInt(allProfiles.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID))),
+                                allProfiles.getString(allProfiles.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)));
+                    } while(allProfiles.moveToNext());
+                }
+                startActivityForResult(intent, MyIntentResults.ADD_NEW_RECORD.ordinal());
+            }
+        });
+
+        add_new_profile_btn = findViewById(R.id.add_new_profile_btn);
+        add_new_profile_btn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                hideFABs();
+                final EditText ed = new EditText(MainActivity.this);
+                DialogInterface.OnClickListener ad_onclick = new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        switch(id) {
+                            case Dialog.BUTTON_POSITIVE:
+                                if (ed.getText().toString().trim().equals("")) {
+                                    Toast t = Toast.makeText(getApplicationContext(), "entered profile name is empty", Toast.LENGTH_LONG);
+                                    t.show();
+                                } else {
+                                    vdb.addProfile(ed.getText().toString().trim());
+                                }
+                                break;
+                            case Dialog.BUTTON_NEGATIVE:
+                                break;
+                            case Dialog.BUTTON_NEUTRAL:
+                                break;
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + id);
+                        }
+                    }
+                };
+                AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+                adb.setTitle(R.string.ad_enter_profile_name);
+                adb.setMessage(R.string.ad_enter_profile_name_message);
+                adb.setPositiveButton("OK", ad_onclick);
+                adb.setNegativeButton("Cancel", ad_onclick);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+                ed.setLayoutParams(lp);
+                adb.setView(ed);
+                adb.show();
+            }
+        });
+
+        gen_new_db_btn = findViewById(R.id.gen_new_db_btn);
+        gen_new_db_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                hideFABs();
+                Thread th = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        vdb.genNewDB();
+                        menuLvl = 0;
+                        renderProfileList();
+                    }
+                });
+                th.start();
+            }
+        });
+
+        btn_list = Arrays.asList(gen_new_db_btn, add_new_profile_btn, add_new_record_btn);
+        FABsShown = true;
+        hideFABs();
 
         RecyclerView rvDoctors = (RecyclerView) findViewById(R.id.listOfDoctors);
         if (doctors == null) {
-            doctors = new ArrayList<DoctorItem>(Arrays.asList(new DoctorItem("Empty list", -1, j -> {Log.i("MainActivity", "Empty list of doctors: onClick (from onCreate)");})));
+            doctors = new ArrayList<DoctorItem>(Arrays.asList(new DoctorItem("Empty list 1", -1,
+                    j -> {Log.i("MainActivity", "Empty list of doctors: onClick (from onCreate)");},
+                    j -> {Log.i("MainActivity", "Empty list of doctors: onLongClick (from onCreate)");})));
         }
 
         docAd = new DoctorAdapter(doctors);
@@ -86,7 +193,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         Toast toast = Toast.makeText(getApplicationContext(), "C'est un message pour vous.", Toast.LENGTH_LONG);
-        toast.setGravity(Gravity.BOTTOM, 0, 0);
         toast.show();
     }
 
@@ -100,36 +206,13 @@ public class MainActivity extends AppCompatActivity {
 
         menuLvl = 0;
 
-        Thread t = new Thread(new Runnable() {
+        Thread th = new Thread(new Runnable() {
             @Override
             public void run() {
-                Random rnd = new Random();
-                Cursor cur = vdb.getAllUsedProfileNames();
-                ArrayList<DoctorItem> docs = new ArrayList<DoctorItem>();
-                if (cur.moveToFirst()) {
-                    do {
-                        docs.add(new DoctorItem(
-                                cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)),
-                                cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID)),
-                                j -> { onProfileChosen(j); })
-                                );
-                    } while (cur.moveToNext());
-                } else {
-                    docs.add(new DoctorItem("Empty list", -1, j -> {Log.i("MainActivity", "Empty list of doctors: onClick");}));
-                }
-                doctors = docs;
-                int numOfProfiles = cur.getCount();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showToast("numOfProfiles: " + Integer.toString(numOfProfiles));
-                        docAd.setDoctors(docs);
-                        docAd.notifyDataSetChanged();
-                    }
-                });
+                renderProfileList();
             }
         });
-        t.start();
+        th.start();
     }
 
     protected void showToast(String s) {
@@ -180,6 +263,49 @@ public class MainActivity extends AppCompatActivity {
                 t.show();
                 break;
             }
+            case ADD_NEW_RECORD: {
+                if (data == null) {
+                    Log.i("onActivityResult: ADD_NEW_RECORD", "data == null");
+                } else {
+                    Log.i("onActivityResult: ADD_NEW_RECORD", "data received");
+                    Bundle bundle = data.getExtras();
+                    String s_profile_id = bundle.getString(RecordSpecificator.KEY_PROFILE_ID);
+                    String docname = bundle.getString(RecordSpecificator.KEY_DOCNAME);
+                    long date = bundle.getLong(RecordSpecificator.KEY_DATE);
+                    String attached_file = bundle.getString(RecordSpecificator.KEY_ATTACHED_FILE_URI);
+                    Toast.makeText(getApplicationContext(), "attached_file: " + attached_file, Toast.LENGTH_LONG).show();
+                    String datatype = getContentResolver().getType(Uri.parse(attached_file));
+                    InputStream is = null;
+                    try {
+                        is = getContentResolver().openInputStream(Uri.parse(attached_file));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                        Toast t = Toast.makeText(getApplicationContext(), "bad content uri", Toast.LENGTH_LONG);
+                        t.show();
+                        break;
+                    }
+                    ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+                    final int bufferSize = 1024;
+                    byte[] buffer = new byte[bufferSize];
+
+                    try {
+                        int len = 0;
+                        while ((len = is.read(buffer)) != -1) {
+                            byteBuffer.write(buffer);
+                        }
+                    } catch (IOException e) {
+                        Toast t = Toast.makeText(getApplicationContext(), "io error", Toast.LENGTH_LONG);
+                        t.show();
+                        e.printStackTrace();
+                        return;
+                    }
+                    Log.i("onActivityResult ADD_NEW_RECORD", "go to addRecord");
+                    Log.i("onActivityResult: ADD_NEW_RECORD", datatype);
+                    Log.i("onActivityResult: ADD_NEW_RECORD", "bytearr.length = " + byteBuffer.toByteArray().length);
+                    vdb.addRecord(docname, Integer.parseInt(s_profile_id), byteBuffer.toByteArray(), datatype);
+                }
+                break;
+            }
         }
         Log.i(MainActivity.class.getName(), "requestCode: " + requestCode);
     }
@@ -193,11 +319,56 @@ public class MainActivity extends AppCompatActivity {
             docAd.setDoctors(doctors);
             docAd.notifyDataSetChanged();
             menuLvl--;
+        } else {
+            super.onBackPressed();
         }
     }
 
-    public void renderProfileList(Cursor cur) {
-
+    public void renderProfileList() {
+        final Random rnd = new Random();
+        final Cursor cur = vdb.getAllUsedProfileNames();
+        final ArrayList<DoctorItem> docs = new ArrayList<DoctorItem>();
+        if (cur.moveToFirst()) {
+            final IntConsumer lambdaOnClick = j -> { onProfileChosen(j); };
+            final IntConsumer lambdaOnLongClick = prof_id -> {
+                vdb.deleteByProfileID(prof_id);
+                Iterator<DoctorItem> itemIterator = docs.iterator();
+                int i = 0;
+                while(itemIterator.hasNext()) {
+                    DoctorItem docitem = itemIterator.next();
+                    if (docitem.getID() == prof_id) {
+                        Log.i("lambdaOnLongClick", "i == " + i + " | docitem.getProfileID() == " + docitem.getID() + " | prof_id == " + prof_id);
+                        itemIterator.remove();
+                        docAd.notifyItemRemoved(i);
+                    }
+                    i++;
+                }
+            };
+            int i = 0;
+            do {
+                docs.add(new DoctorItem(
+                        cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_NAME)),
+                        cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_PROFILE_ID)),
+                        lambdaOnClick,
+                        lambdaOnLongClick
+                ));
+                i++;
+            } while (cur.moveToNext());
+        } else {
+            docs.add(new DoctorItem("Empty list 2", -1,
+                    j -> {Log.i("MainActivity", "Empty list of doctors: onClick");},
+                    j -> {Log.i("MainActivity", "Empty list of doctors: onLongClick");}));
+        }
+        doctors = docs;
+        final int numOfProfiles = cur.getCount();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showToast("numOfProfiles: " + Integer.toString(numOfProfiles));
+                docAd.setDoctors(docs);
+                docAd.notifyDataSetChanged();
+            }
+        });
     }
 
     public void onProfileChosen(int profile_id) {
@@ -209,14 +380,32 @@ public class MainActivity extends AppCompatActivity {
             docDates.clear();
         }
         if (cur.moveToFirst()) {
+            final IntConsumer lambdaOnClick = j -> {Log.i("DoctorList", "date #" + j + " clicked"); onDateChosen(j);};
+            final IntConsumer lambdaOnLongClick = rec_id -> {
+                Log.i("DoctorList", "date #" + rec_id + " longClicked");
+                vdb.deleteByRecordID(rec_id);
+                Iterator<DoctorItem> itemIterator = docDates.iterator();
+                int i = 0;
+                while (itemIterator.hasNext()) {
+                    DoctorItem doctorItem = itemIterator.next();
+                    if (doctorItem.getID() == rec_id) {
+                        itemIterator.remove();
+                        docAd.notifyItemRemoved(i);
+                    }
+                    i++;
+                }
+            };
             do {
                 docDates.add(new DoctorItem(
                         cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_DOCNAME)),
                         cur.getInt(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_ID)),
-                        j -> {Log.i("DoctorList", "date #" + j + " clicked"); onDateChosen(j);}));
+                        lambdaOnClick,
+                        lambdaOnLongClick));
             } while(cur.moveToNext());
         } else {
-            docDates.add(new DoctorItem("Empty list", -1, j -> {Log.i("DoctorList", "Empty");}));
+            docDates.add(new DoctorItem("Empty list 3", -1,
+                    j -> {Log.i("DoctorList", "Empty");},
+                    j -> {Log.i("DoctorList", "Empty onLongClick");}));
         }
         menuLvl++;
         docAd.setDoctors(docDates);
@@ -228,9 +417,9 @@ public class MainActivity extends AppCompatActivity {
         s_uri_datatype = vdb.getDataTypeByID(id);
         s_uri_to_open = "content://com.example.medlib.MyContentProvider/" + id;
         Log.i("onDateChosen", s_uri_datatype);
-//        if (datatype.equals("application/pdf")) {
+//        if (s_uri_datatype.equals("application/pdf")) {
 //            Intent intent = new Intent(MainActivity.this, PdfViewer.class);
-//            intent.putExtra("uri", uri);
+//            intent.putExtra("uri", s_uri_to_open);
 //            startActivity(intent);
 //        } else {
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -238,5 +427,32 @@ public class MainActivity extends AppCompatActivity {
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             startActivityForResult(intent, MyIntentResults.OPEN_CONTENT_URL.ordinal());
 //        }
+    }
+
+    public void showFABs() {
+        if (!FABsShown) {
+            btn_list.forEach(j -> {j.show(); j.animate().alpha(1.0f);});
+            FABsShown = true;
+            ImageView iv = new ImageView(this);
+            
+
+            findViewById(R.id.activity_main_constraint_layout).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (FABsShown) hideFABs();
+                }
+            });
+        }
+    }
+
+    public void hideFABs() {
+        if (FABsShown) {
+            ListIterator<ExtendedFloatingActionButton> it = btn_list.listIterator(btn_list.size());
+            Consumer<ExtendedFloatingActionButton> consumer = j -> {j.animate().alpha(0.0f); j.hide();};
+            while (it.hasPrevious()) {
+                consumer.accept(it.previous());
+            }
+            FABsShown = false;
+        }
     }
 }

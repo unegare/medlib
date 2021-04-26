@@ -5,26 +5,30 @@ import java.util.function.IntConsumer;
 
 public class DoctorItem {
     private String mProfileName;
-    private int mProfileID;
+    private int mID;
     private IntConsumer mOnClick;
+    private IntConsumer mOnLongClick;
 
-    public DoctorItem(String profileName, int profileID, IntConsumer onClick) {
+    public DoctorItem(String profileName, int ID, IntConsumer onClick, IntConsumer onLongClick) {
         mProfileName = profileName;
-        mProfileID = profileID;
+        mID = ID;
         mOnClick = onClick;
+        mOnLongClick = onLongClick;
     }
 
     public String getProfileName() {
         return mProfileName;
     }
 
-    public int getProfileID() {
-        return mProfileID;
+    public int getID() {
+        return mID;
     }
 
     public IntConsumer getOnClickHandler() {
         return mOnClick;
     }
+
+    public IntConsumer getOnLongClickHandler() {return mOnLongClick;}
 
 //    public static int lastDoctorId = 0;
 //

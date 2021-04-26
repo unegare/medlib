@@ -18,6 +18,8 @@
         </activity>
         <activity android:name=".PdfViewer">
         </activity>
+        <activity android:name=".RecordSpecificator">
+        </activity>
         <provider android:name="MyContentProvider"
             android:authorities="com.example.medlib.MyContentProvider"
             android:exported="true"></provider>

@@ -18,7 +18,7 @@ public class VisitDB {
 
     public class VisitDBHelper extends SQLiteOpenHelper {
         public static final String DB_NAME = "visits.db";
-        public static final int DB_VERSION = 4;
+        public static final int DB_VERSION = 5;
         public static final String TABLE_NAME_VISITS = "visits";
 
         public static final String COLUMN_ID = "_id";
@@ -102,6 +102,7 @@ public class VisitDB {
         }
 
         public void genSampleDB(SQLiteDatabase db, int numOfProfiles, int numOfVisits) {
+            Log.i("genSampleDB", "begin");
             for (int i = 0; i < numOfProfiles; i++) {
                 addProfile(db, "Profile #" + i);
             }
@@ -122,6 +123,11 @@ public class VisitDB {
             Cursor cur = db.rawQuery("SELECT * FROM " + TABLE_NAME_PROFILES + " PR "
                     + " WHERE EXISTS (SELECT 1 FROM " + TABLE_NAME_VISITS + " VS "
                     + " WHERE VS." + COLUMN_PROFILE_ID + " = PR." + COLUMN_PROFILE_ID + ");", null);
+            return cur;
+        }
+
+        public Cursor getAllProfiles(SQLiteDatabase db) {
+            Cursor cur = db.rawQuery("SELECT * FROM " + TABLE_NAME_PROFILES + ";", null);
             return cur;
         }
 
@@ -160,6 +166,14 @@ public class VisitDB {
             }
             return bytearr;
         }
+
+        public void deleteByProfileID(SQLiteDatabase db, int profile_id) {
+            db.delete(TABLE_NAME_VISITS, COLUMN_PROFILE_ID + " = " + profile_id, null);
+        }
+
+        public void deleteByRecordID(SQLiteDatabase db, int record_id) {
+            db.delete(TABLE_NAME_VISITS, COLUMN_ID + " = " + record_id, null);
+        }
     }
 
     public VisitDB(Context ctx) {
@@ -190,6 +204,10 @@ public class VisitDB {
         dbHelper.addRecord(db, docname, profile_id, bytearr, datatype);
     }
 
+    public void addProfile(String profile_name) {
+        dbHelper.addProfile(db, profile_name);
+    }
+
     public Cursor getAllUsedProfileIDs() {
         return dbHelper.getAllUsedProfileIDs(db);
     }
@@ -197,6 +215,8 @@ public class VisitDB {
     public Cursor getAllUsedProfileNames() {
         return dbHelper.getAllUsedProfileNames(db);
     }
+
+    public Cursor getAllProfiles() {return dbHelper.getAllProfiles(db);}
 
     public Cursor getAllRecordsByProfileID(int profile_id) {
         return dbHelper.getAllRecordsByProfileID(db, profile_id);
@@ -217,7 +237,15 @@ public class VisitDB {
     public Cursor getAllDocnamesAndDatesByProfileID(int id) {
         return dbHelper.getAllDocnamesAndDatesByProfileID(db, id);
     }
+
+    public void deleteByProfileID(int profile_id) {dbHelper.deleteByProfileID(db, profile_id);}
+    public void deleteByRecordID(int record_id) {dbHelper.deleteByRecordID(db, record_id);}
+
     public void close() throws SQLException {
         db.close();
+    }
+
+    public void genNewDB() {
+        dbHelper.genSampleDB(db, 4, 10);
     }
 }

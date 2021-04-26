@@ -62,14 +62,7 @@ public class MyContentProvider extends ContentProvider {
 
     public String getType(Uri uri) {
         Log.i(MyContentProvider.class.getName(), "getType(" + uri.toString() + ")");
-        Cursor cur = vdb.getRecordByID(Integer.parseInt(uri.getLastPathSegment()));
-        String datatype;
-        if (cur.moveToFirst()) {
-            datatype = cur.getString(cur.getColumnIndex(VisitDB.VisitDBHelper.COLUMN_ATTACHED_DATA_TYPE));
-        } else {
-            datatype = "text/plain";
-        }
-        return datatype;
+        return vdb.getDataTypeByID(Integer.parseInt(uri.getLastPathSegment()));
     }
 
     public ParcelFileDescriptor openFile(Uri uri, String mode, CancellationSignal signal) {
@@ -83,7 +76,6 @@ public class MyContentProvider extends ContentProvider {
             byte[] bytearr = vdb.getDataByID(Integer.parseInt(uri.getLastPathSegment()));
             ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
             ParcelFileDescriptor.AutoCloseOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]);
-//            outputStream.write("Hello there!".getBytes());
             outputStream.write(bytearr);
             outputStream.flush();
             outputStream.close();
