@@ -103,6 +103,12 @@ public class VisitDB {
 
         public void genSampleDB(SQLiteDatabase db, int numOfProfiles, int numOfVisits) {
             Log.i("genSampleDB", "begin");
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME_VISITS + ";");
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME_PROFILES + ";");
+            db.execSQL("DROP TRIGGER IF EXISTS " + TRIGGER_NAME + ";");
+            db.execSQL(CREATE_TABLE_PROFILES);
+            db.execSQL(CREATE_TABLE_VISITS);
+            db.execSQL(CREATE_TRIGGER);
             for (int i = 0; i < numOfProfiles; i++) {
                 addProfile(db, "Profile #" + i);
             }

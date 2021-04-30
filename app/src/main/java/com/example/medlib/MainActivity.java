@@ -237,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        showToast("onActivityResult: resultCode = " + resultCode + " | RESULT_OK == " + Activity.RESULT_OK + " | " + MIR_VALUES[requestCode] + " | (data == null) == " + (data == null));
+//        showToast("onActivityResult: resultCode = " + resultCode + " | RESULT_OK == " + Activity.RESULT_OK + " | " + MIR_VALUES[requestCode] + " | (data == null) == " + (data == null));
         if (resultCode != Activity.RESULT_OK) {
             if  (MIR_VALUES[requestCode] == MyIntentResults.OPEN_CONTENT_URL) {
                 if (s_uri_datatype.equals("application/pdf")) {
